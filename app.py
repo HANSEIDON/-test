@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3, time, hashlib, hmac, os, math, json, random
 
@@ -217,3 +217,12 @@ def dashboard():
         )
     html.append("</table><p class='badge' style='margin-top:16px'>Wilson interval. Refresh to update.</p></body></html>")
     return "\n".join(html)
+
+@app.get("/", include_in_schema=False)
+def serve_index():
+    path = os.path.join(os.path.dirname(__file__), "index.html")
+    return FileResponse(path)
+
+@app.get("/healthz", include_in_schema=False)
+def healthz():
+    return {"ok": True}
