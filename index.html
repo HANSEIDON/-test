@@ -39,16 +39,16 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>작은 CTR 테스트</h1>
-  <p class="muted">임무를 수행하며 광고가 노출됩니다. 친구들에게 공유해서 데이터를 모아보세요.</p>
+  <h1>CTR 테스트</h1>
+  <p class="muted">검색결과는 클릭이 불가하며 생성되는 링크도 존재하지 않는 링크입니다!</p>
 
   <div id="consent" class="panel notice" hidden>
     이 페이지는 노출/클릭 데이터를 연구용으로 익명 수집합니다. 계속하면 동의한 것으로 간주합니다.
   </div>
 
   <div class="panel mission">
-    <strong>임무:</strong> 친구에게 줄 <b>가성비 무선 이어폰</b>을 찾아 링크 하나 골라보세요.
-    <span class="muted"> (추천 키워드: 무선 이어폰, 가성비, 할인)</span>
+    <strong>임무:</strong> 친구에게 줄 <b>가성비 무선 이어폰</b>을 찾아주세요!
+    <span class="muted"> (재미삼아 몇번 검색해 주시면 됩니다)</span>
     <div class="muted" style="margin-top:6px">Variant: <span id="variant">…</span> · Placement: <span id="placement">…</span></div>
   </div>
 
@@ -121,14 +121,15 @@ function adCreative(variant){
   }
   // C
   return { creative_id:"C1", html: `
-    <div class="ad" data-variant="C" data-creative-id="C1">
-      <div class="body" style="background:linear-gradient(180deg, rgba(99,102,241,.10), rgba(99,102,241,.04));border-bottom:1px solid var(--border);border-radius:16px 16px 0 0">
-        <div class="tag">추천 광고 · 하이라이트</div>
-        <h3 class="title">오늘만! 친구 전용 추가 할인</h3>
-        <p class="desc">놓치면 아쉬운 타임딜. 재고 한정.</p>
-        <a class="cta" href="#">지금 참여</a>
-      </div>
-    </div>` };
+  <div class="ad" data-variant="C" data-creative-id="C1">
+    <img class="media" src="https://picsum.photos/seed/fashion/1200/675" alt="패션 광고 이미지">
+    <div class="body" style="background:linear-gradient(180deg, rgba(236,72,153,.10), rgba(236,72,153,.04));border-bottom:1px solid var(--border);border-radius:0 0 16px 16px">
+      <div class="tag">추천 광고 · 패션</div>
+      <h3 class="title">요즘 핫한 연예인 픽 👗</h3>
+      <p class="desc">신세경의 선택!</p>
+      <a class="cta" href="#">구매하러 가기</a>
+    </div>
+  </div>` };
 }
 
 function mountAd(placement){
@@ -265,6 +266,7 @@ async function doSearch(){
 </script>
 </body>
 </html>
+
 
 
 
