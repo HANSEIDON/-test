@@ -69,7 +69,7 @@
 </div>
 
 <script>
-const API_BASE = window.location.origin;
+const API_BASE = "https://test-xntv.onrender.com";
 function uuid(){ return (crypto.randomUUID ? crypto.randomUUID() :
   'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
     const r = crypto.getRandomValues(new Uint8Array(1))[0]&15, v=c=='x'?r:(r&0x3|0x8); return v.toString(16);
@@ -265,5 +265,6 @@ async function doSearch(){
 </script>
 </body>
 </html>
+
 
 
