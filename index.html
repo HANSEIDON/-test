@@ -97,28 +97,30 @@ async function register() {
 // ----- Ads -----
 function adCreative(variant){
   if (variant === "A") {
-    return { creative_id:"A1", html: `
-      <div class="ad" data-variant="A" data-creative-id="A1">
-        <div class="body">
-          <div class="tag">추천 광고 · 네이티브</div>
-          <h3 class="title">가벼운 가격, 가벼운 착용감</h3>
-          <p class="desc">“가성비 코드리스, 지금 특가로 만나보세요.”</p>
-          <a class="cta" href="#">자세히 보기</a>
-        </div>
-      </div>` };
-  }
+  return { creative_id: "A1", html: `
+    <div class="ad" data-variant="A" data-creative-id="A1">
+      <img class="media" src="/static/fruits.jpg" alt="신선한 과일"> <!-- fruits.jpg로 수정 -->
+      <div class="body">
+        <div class="tag">추천 광고 · 신선한 과일</div>
+        <h3 class="title">100% 당일배송, 산지직송</h3>
+        <p class="desc">북경에서 신선한 과일을 접해보세요!</p>
+        <a class="cta" href="#">지금 구매</a>
+      </div>
+    </div>` };
+}
   if (variant === "B") {
-    return { creative_id:"B1", html: `
-      <div class="ad" data-variant="B" data-creative-id="B1">
-        <img class="media" src="https://picsum.photos/seed/ctr-b/1200/675" alt="">
-        <div class="body">
-          <div class="tag">추천 광고 · 이미지</div>
-          <h3 class="title">배터리 길~게, 끊김 없게</h3>
-          <p class="desc">노이즈캔슬링 입문 최적 조합.</p>
-          <a class="cta" href="#">보러가기</a>
-        </div>
-      </div>` };
-  }
+  return { creative_id: "B1", html: `
+    <div class="ad" data-variant="B" data-creative-id="B1">
+      <img class="media" src="/static/airpods.jpg" alt="AirPods 프로3"> <!-- airpods.jpg 그대로 사용 -->
+      <div class="body">
+        <div class="tag">추천 광고 · AirPods</div>
+        <h3 class="title">신규 가입 쿠폰 “Airpods” 입력하시고</h3>
+        <p class="desc">에어팟 프로3 20% 할인 받아가세요!</p>
+        <a class="cta" href="#">지금 바로 받기</a>
+      </div>
+    </div>` };
+}
+
   // C
   return { creative_id:"C1", html: `
   <div class="ad" data-variant="C" data-creative-id="C1">
@@ -267,6 +269,7 @@ async function doSearch(){
 </script>
 </body>
 </html>
+
 
 
 
