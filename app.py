@@ -2,6 +2,9 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3, time, hashlib, hmac, os, math, json, random
+from fastapi.staticfiles import StaticFiles
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 DB_PATH = os.environ.get("DB_PATH", "ctr.db")
 SECRET = os.environ.get("SECRET", "changeme")
@@ -226,3 +229,4 @@ def serve_index():
 @app.get("/healthz", include_in_schema=False)
 def healthz():
     return {"ok": True}
+
