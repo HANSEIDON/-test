@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import sqlite3, time, hashlib, hmac, os, math, json, random
 from fastapi.staticfiles import StaticFiles
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 DB_PATH = os.environ.get("DB_PATH", "ctr.db")
 SECRET = os.environ.get("SECRET", "changeme")
@@ -15,6 +15,9 @@ app.add_middleware(
     allow_origins=["*"], allow_credentials=True,
     allow_methods=["*"], allow_headers=["*"]
 )
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 def db():
     conn = sqlite3.connect(DB_PATH)
@@ -229,4 +232,5 @@ def serve_index():
 @app.get("/healthz", include_in_schema=False)
 def healthz():
     return {"ok": True}
+
 
