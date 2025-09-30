@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>검색 임무 · CTR 실험</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#121826; --text:#e5e7eb; --muted:#9aa4b2; --border:#1f2937;
+    --brand:#60a5fa; --ring:rgba(96,165,250,.35); --radius:16px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#fafafa; --panel:#ffffff; --text:#0f172a; --muted:#64748b; --border:#e5e7eb; --brand:#2563eb; --ring:rgba(59,130,246,.35);}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans",Apple SD Gothic Neo,"맑은 고딕",sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 18px 64px}
+  h1{margin:0 0 8px;font-size:clamp(28px,4vw,40px);letter-spacing:-.02em}
+  .muted{color:var(--muted)}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+  .mission{margin:14px 0 18px}
+  .searchbar{display:flex;gap:8px;margin-bottom:16px}
+  .input{flex:1;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text)}
+  .btn{padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:linear-gradient(180deg, rgba(99,102,241,.10), rgba(99,102,241,.04));color:var(--brand);font-weight:700}
+  .layout{display:grid;grid-template-columns:1fr;gap:18px}
+  @media(min-width:980px){ .layout{grid-template-columns:2fr 1fr} }
+  .result{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px}
+  .result h3{margin:0 0 4px;font-size:18px}
+  .ads-sticky{position:sticky; top:16px}
+  .ad{background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .ad .media{width:100%;aspect-ratio:16/9;object-fit:cover;border-bottom:1px solid var(--border)}
+  .ad .body{padding:14px}
+  .ad .title{margin:0 0 6px;font-weight:800}
+  .ad .desc{margin:0 0 10px;color:var(--muted)}
+  .ad .cta{display:inline-block;padding:10px 12px;border-radius:12px;border:1px solid var(--border);color:var(--brand);text-decoration:none;font-weight:700}
+  .tag{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:var(--muted);border:1px dashed var(--border);padding:4px 8px;border-radius:999px;margin-bottom:8px}
+  .notice{margin:8px 0 18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>작은 CTR 테스트</h1>
+  <p class="muted">임무를 수행하며 광고가 노출됩니다. 친구들에게 공유해서 데이터를 모아보세요.</p>
+
+  <div id="consent" class="panel notice" hidden>
+    이 페이지는 노출/클릭 데이터를 연구용으로 익명 수집합니다. 계속하면 동의한 것으로 간주합니다.
+  </div>
+
+  <div class="panel mission">
+    <strong>임무:</strong> 친구에게 줄 <b>가성비 무선 이어폰</b>을 찾아 링크 하나 골라보세요.
+    <span class="muted"> (추천 키워드: 무선 이어폰, 가성비, 할인)</span>
+    <div class="muted" style="margin-top:6px">Variant: <span id="variant">…</span> · Placement: <span id="placement">…</span></div>
+  </div>
+
+  <div class="searchbar">
+    <input id="q" class="input" placeholder="예: 무선 이어폰 할인, 가성비 코드리스…" />
+    <button id="go" class="btn">검색</button>
+  </div>
+
+  <div class="layout">
+    <main>
+      <div id="ad-top"></div> <!-- P1: Top placement -->
+      <div id="results"></div> <!-- results list -->
+    </main>
+    <aside>
+      <div class="ads-sticky" id="ad-side"></div> <!-- P2: Side sticky -->
+    </aside>
+  </div>
+</div>
+
+<script>
+const API_BASE = "http://localhost:8000";
+function uuid(){ return (crypto.randomUUID ? crypto.randomUUID() :
+  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
+    const r = crypto.getRandomValues(new Uint8Array(1))[0]&15, v=c=='x'?r:(r&0x3|0x8); return v.toString(16);
+  })
+);}
+const user_id = localStorage.getItem("user_id") || (localStorage.setItem("user_id", uuid()), localStorage.getItem("user_id"));
+const session_id = sessionStorage.getItem("session_id") || (sessionStorage.setItem("session_id", uuid()), sessionStorage.getItem("session_id"));
+
+let ASSIGNED = { variant: "A", placement: "P1" };
+
+async function register() {
+  const r1 = await fetch(API_BASE+"/api/register_user", {
+    method:"POST", headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ user_id })
+  }).then(r=>r.json());
+  await fetch(API_BASE+"/api/start_session", {
+    method:"POST", headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ user_id, session_id, referrer: document.referrer||"" })
+  });
+  ASSIGNED = { variant: r1.variant, placement: r1.placement };
+  document.getElementById("variant").textContent = ASSIGNED.variant;
+  document.getElementById("placement").textContent = ASSIGNED.placement;
+}
+
+// ----- Ads -----
+function adCreative(variant){
+  if (variant === "A") {
+    return { creative_id:"A1", html: `
+      <div class="ad" data-variant="A" data-creative-id="A1">
+        <div class="body">
+          <div class="tag">추천 광고 · 네이티브</div>
+          <h3 class="title">가벼운 가격, 가벼운 착용감</h3>
+          <p class="desc">“가성비 코드리스, 지금 특가로 만나보세요.”</p>
+          <a class="cta" href="#">자세히 보기</a>
+        </div>
+      </div>` };
+  }
+  if (variant === "B") {
+    return { creative_id:"B1", html: `
+      <div class="ad" data-variant="B" data-creative-id="B1">
+        <img class="media" src="https://picsum.photos/seed/ctr-b/1200/675" alt="">
+        <div class="body">
+          <div class="tag">추천 광고 · 이미지</div>
+          <h3 class="title">배터리 길~게, 끊김 없게</h3>
+          <p class="desc">노이즈캔슬링 입문 최적 조합.</p>
+          <a class="cta" href="#">보러가기</a>
+        </div>
+      </div>` };
+  }
+  // C
+  return { creative_id:"C1", html: `
+    <div class="ad" data-variant="C" data-creative-id="C1">
+      <div class="body" style="background:linear-gradient(180deg, rgba(99,102,241,.10), rgba(99,102,241,.04));border-bottom:1px solid var(--border);border-radius:16px 16px 0 0">
+        <div class="tag">추천 광고 · 하이라이트</div>
+        <h3 class="title">오늘만! 친구 전용 추가 할인</h3>
+        <p class="desc">놓치면 아쉬운 타임딜. 재고 한정.</p>
+        <a class="cta" href="#">지금 참여</a>
+      </div>
+    </div>` };
+}
+
+function mountAd(placement){
+  const { variant } = ASSIGNED;
+  const ad = adCreative(variant);
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = ad.html.trim();
+
+  if (placement === "P1") {
+    document.getElementById("ad-top").innerHTML = "";
+    document.getElementById("ad-top").appendChild(wrapper.firstElementChild);
+  } else if (placement === "P2") {
+    document.getElementById("ad-side").innerHTML = "";
+    document.getElementById("ad-side").appendChild(wrapper.firstElementChild);
+  }
+  // P3는 검색 결과가 그려진 이후 inline으로 삽입 (아래 handleResults에서 처리)
+}
+
+function logImpression(el, visible_ms){
+  const variant = el.dataset.variant, creative_id = el.dataset.creativeId;
+  return fetch(API_BASE+"/api/imp", {
+    method:"POST", headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      user_id, session_id, variant,
+      placement: ASSIGNED.placement,
+      creative_id, visible_ms,
+      viewport_w: window.innerWidth, viewport_h: window.innerHeight
+    })
+  });
+}
+
+function bindAdTracking(adEl){
+  // impression: 50% 이상, 800ms 이상
+  const seen = { done:false, start:0 };
+  const io = new IntersectionObserver((entries)=>{
+    const e = entries[0];
+    if (e.isIntersecting && e.intersectionRatio >= 0.5 && !seen.done){
+      seen.start = performance.now();
+      const tick = ()=>{
+        if (seen.done) return;
+        if (performance.now() - seen.start >= 800){
+          seen.done = true;
+          logImpression(adEl, Math.round(performance.now() - seen.start));
+          io.disconnect();
+        } else if (e.isIntersecting && e.intersectionRatio >= 0.5){
+          requestAnimationFrame(tick);
+        }
+      };
+      requestAnimationFrame(tick);
+    }
+  }, { threshold:[0.5] });
+  io.observe(adEl);
+
+  // click
+  const cta = adEl.querySelector(".cta");
+  let last=0;
+  cta.addEventListener("click", (ev)=>{
+    ev.preventDefault();
+    const now = Date.now(); if (now-last<400) return; last=now;
+    fetch(API_BASE+"/api/click", {
+      method:"POST", headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        user_id, session_id,
+        variant: adEl.dataset.variant,
+        placement: ASSIGNED.placement,
+        creative_id: adEl.dataset.creativeId
+      })
+    });
+    alert("클릭이 기록되었습니다.");
+  });
+}
+
+// ----- Search & results -----
+function renderResults(list){
+  const box = document.getElementById("results");
+  box.innerHTML = "";
+  list.forEach((r, idx)=>{
+    const div = document.createElement("div");
+    div.className = "result";
+    div.innerHTML = `<h3>${idx+1}. ${r.title}</h3>
+                     <div class="muted">${r.domain}</div>
+                     <div class="muted">${r.desc}</div>`;
+    box.appendChild(div);
+
+    // P3: inline after first result (idx==0) 삽입
+    if (ASSIGNED.placement === "P3" && idx === 0){
+      const ad = adCreative(ASSIGNED.variant);
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = ad.html.trim();
+      const adEl = wrapper.firstElementChild;
+      adEl.style.margin = "10px 0";
+      box.appendChild(adEl);
+      bindAdTracking(adEl);
+    }
+  });
+}
+
+async function doSearch(){
+  const q = document.getElementById("q").value.trim();
+  // 광고 배치 렌더 (P1/P2는 즉시, P3는 결과 렌더 시)
+  mountAd(ASSIGNED.placement);
+
+  const r = await fetch(API_BASE+"/api/search",{
+    method:"POST", headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ user_id, session_id, q })
+  }).then(x=>x.json());
+
+  renderResults(r.results || []);
+
+  // 트래킹 바인딩 (P1/P2)
+  if (ASSIGNED.placement === "P1"){
+    const adEl = document.querySelector("#ad-top .ad");
+    if (adEl) bindAdTracking(adEl);
+  }
+  if (ASSIGNED.placement === "P2"){
+    const adEl = document.querySelector("#ad-side .ad");
+    if (adEl) bindAdTracking(adEl);
+  }
+}
+
+(async ()=>{
+  if (!localStorage.getItem("ctr_notice")) {
+    document.getElementById("consent").hidden = false;
+    localStorage.setItem("ctr_notice", "1");
+  }
+  await register();
+  // 기본 제안 쿼리로 첫 검색 한번 실행해도 됨 (원하면 주석 해제)
+  // document.getElementById("q").value = "무선 이어폰 가성비";
+  // doSearch();
+
+  document.getElementById("go").addEventListener("click", doSearch);
+  document.getElementById("q").addEventListener("keydown", (e)=>{ if(e.key==="Enter") doSearch(); });
+})();
+</script>
+</body>
+</html>
